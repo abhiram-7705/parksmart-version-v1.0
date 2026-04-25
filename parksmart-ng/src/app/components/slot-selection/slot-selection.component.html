@@ -1,0 +1,109 @@
+<div class="slot-page">
+  <div class="slot-topbar">
+    <button class="back-btn" (click)="goBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Return to Search
+    </button>
+    <div class="hold-timer" *ngIf="timerDisplay && selectedSlotIds.length > 0" [class.urgent]="timerDisplay.startsWith('0:')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Hold expires: {{ timerDisplay }}
+    </div>
+  </div>
+
+  <div class="slot-container">
+    <!-- Space info -->
+    <div class="space-card" *ngIf="card">
+      <h1 class="space-name">{{ card.name }}</h1>
+      <p class="space-city">{{ card.city }}</p>
+      <p class="space-type">
+        <span class="badge" [ngClass]="card.type === 'PUBLIC' ? 'badge-blue' : 'badge-gray'">{{ card.type | lowercase }}</span>
+        parking
+        <span class="dot">•</span>
+        <span [class]="slots.length > 0 ? 'avail-ok' : 'avail-none'">
+          {{ availableCount() > 0 ? 'Slots available' : 'Limited slots' }}
+        </span>
+      </p>
+    </div>
+
+    <!-- Time selection -->
+    <div class="section-card">
+      <h2 class="section-title">Select Date & Time</h2>
+      <div class="time-grid">
+        <div class="form-group">
+          <label class="form-label">Arriving</label>
+          <input class="form-control" type="datetime-local" [(ngModel)]="arriving" (change)="onTimeChange()"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Leaving</label>
+          <input class="form-control" type="datetime-local" [(ngModel)]="leaving" (change)="onTimeChange()"/>
+        </div>
+      </div>
+      <div class="time-summary" *ngIf="durationMinutes > 0">
+        <span class="ts-item"><strong>{{ durationMinutes }} mins</strong></span>
+        <span class="ts-sep">•</span>
+        <span class="ts-item">Billed: <strong>{{ billedHours }} hr{{ billedHours !== 1 ? 's' : '' }}</strong></span>
+        <span class="ts-sep">•</span>
+        <span class="ts-item">Est. <strong>₹{{ totalPrice | number:'1.0-0' }}</strong></span>
+      </div>
+      <!-- Legend -->
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot avail"></span> Available</span>
+        <span class="legend-item"><span class="legend-dot sel"></span> Selected</span>
+        <span class="legend-item"><span class="legend-dot unav"></span> Unavailable</span>
+        <span class="legend-item"><span class="legend-dot blocked"></span> Blocked</span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <span>Loading slots…</span>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+    <!-- Slot grid -->
+    <div class="section-card" *ngIf="!loading && slots.length > 0">
+      <h2 class="section-title">Select a Slot <span class="max-hint">(max 3)</span></h2>
+      <div class="slot-grid">
+        <div *ngFor="let slot of slots"
+             class="slot-card"
+             [ngClass]="getSlotClass(slot)"
+             (click)="toggleSlot(slot)">
+          <span class="slot-emoji">
+            <ng-container *ngIf="isSelected(slot.slotId)">🚗</ng-container>
+            <ng-container *ngIf="!isSelected(slot.slotId) && !slot.isAvailable">🚫</ng-container>
+            <ng-container *ngIf="!isSelected(slot.slotId) && slot.isAvailable">🅿</ng-container>
+          </span>
+          <span class="slot-number">{{ slot.slotNumber }}</span>
+          <span class="slot-status-label" *ngIf="slot.status === 'BLOCKED'">Blocked</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty slots -->
+    <div *ngIf="!loading && slots.length === 0 && !error" class="empty-state">
+      <p>No slots configured for this space.</p>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="slot-footer" *ngIf="!loading">
+    <span class="footer-count">{{ selectedSlotIds.length }} slot(s) selected</span>
+    <button class="btn btn-primary btn-lg" [disabled]="selectedSlotIds.length === 0" (click)="proceed()">
+      Proceed to Booking
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Expired dialog -->
+<div class="modal-backdrop" *ngIf="showExpiredDialog">
+  <div class="modal-box expired-box">
+    <div class="expired-icon">⏰</div>
+    <h3>Hold Expired</h3>
+    <p>Your slot hold has expired. You will be redirected to search in <strong>{{ expiredCountdown }}s</strong>.</p>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" (click)="router.navigate(['/search'])">Go to Search Now</button>
+  </div>
+</div>
