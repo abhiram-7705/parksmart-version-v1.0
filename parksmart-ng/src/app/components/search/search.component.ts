@@ -44,6 +44,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   constructor(private searchSvc: SearchService, private router: Router) {}
 
   ngOnInit() {
+    this.loading = true;
    const now = new Date();
   const arrivalTime = new Date(now.getTime() + 16 * 60 * 1000);
   const leavingTime = new Date(arrivalTime.getTime() + 60 * 60 * 1000);

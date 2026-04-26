@@ -4,24 +4,29 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import com.cts.mfrp.parksmart.model.SlotHold;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface SlotHoldRepository
         extends JpaRepository<SlotHold, Integer> {
 
-    boolean existsBySlotSlotIdAndArrivalLessThanAndLeavingGreaterThanAndExpiresAtAfter(
-        Integer slotId,
-        LocalDateTime arrival,
-        LocalDateTime leaving,
-        LocalDateTime now
-    );
+
 
     List<SlotHold> findByHoldGroupId(String holdGroupId);
 
     void deleteByHoldGroupIdAndUserEmail(String holdGroupId, String email);
 
     void deleteByExpiresAtBefore(LocalDateTime time);
+
+    @Modifying
+    @Transactional
+	void deleteByUserEmail(String email);
+
+	boolean existsBySlotSlotIdAndArrivalLessThanAndLeavingGreaterThanAndExpiresAtAfterAndUserEmailNot(Integer slotId,
+			LocalDateTime leaving, LocalDateTime arrival, LocalDateTime now, String email);
 }

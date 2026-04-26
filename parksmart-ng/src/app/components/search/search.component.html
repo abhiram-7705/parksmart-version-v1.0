@@ -1,5 +1,13 @@
 <div class="search-page">
 
+  <!-- Initial loading overlay -->
+  <div *ngIf="loading && cards.length === 0" class="search-overlay-loader">
+    <div class="overlay-content">
+      <div class="spinner spinner-dark" style="width:42px;height:42px;border-width:4px"></div>
+      <span class="overlay-text">Finding parking spaces near you...</span>
+    </div>
+  </div>
+
   <!-- Top Search Bar -->
   <div class="search-bar-strip">
     <div class="search-bar-inner">

@@ -48,7 +48,16 @@ export class SignupModalComponent {
         this.success = 'Account created! Redirecting to login…';
         setTimeout(() => this.modal.openLogin(), 1500);
       },
-      error: err => { this.loading = false; this.error = err?.error || 'Registration failed. Please try again.'; }
+      error: err => {
+        this.loading = false;
+        // Check for duplicate phone number error
+        const errorMsg = err?.error || '';
+        if (errorMsg.includes('Duplicate entry') || errorMsg.includes('UK9q63snka3mdh91as4io72espi')) {
+          this.error = 'Phone number already exists';
+        } else {
+          this.error = err?.error || 'Registration failed. Please try again.';
+        }
+      }
     });
   }
 }

@@ -61,6 +61,7 @@ export class DashboardComponent implements OnInit {
   addSlotSpaceId: number | null = null;
   newSlotName = '';
   addSlotLoading = false;
+  addSlotError = '';
   deleteSlotConfirm: any = null;
   showDeleteSlotConfirm = false;
 
@@ -252,28 +253,101 @@ export class DashboardComponent implements OnInit {
 
   addSlot() {
     if (!this.newSlotName || !this.showOwnerSlots) return;
+    
+    // Validate: 1-2 alphabets followed by numbers
+    const slotNameRegex = /^[a-zA-Z]{1,2}[0-9]+$/;
+    if (!slotNameRegex.test(this.newSlotName.trim())) {
+      this.addSlotError = 'Slot name must have 1-2 alphabets followed by numbers (e.g., A1, B12, P100)';
+      return;
+    }
+    
     this.addSlotLoading = true;
+    this.addSlotError = '';
     this.ownerSvc.addSlot(this.showOwnerSlots.spaceId, this.newSlotName.toUpperCase()).subscribe({
-      next: () => { this.addSlotLoading = false; this.newSlotName = ''; this.openSlots(this.showOwnerSlots); },
-      error: err => { this.addSlotLoading = false; alert(err?.error || 'Failed to add slot'); }
+      next: () => { this.addSlotLoading = false; this.newSlotName = ''; this.addSlotError = ''; this.openSlots(this.showOwnerSlots); },
+      error: err => { this.addSlotLoading = false; this.addSlotError = err?.error || 'Failed to add slot'; }
     });
   }
 
-  useCurrentLocation() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(pos => {
-      const { latitude, longitude } = pos.coords;
-      this.spaceForm.latitude = latitude; this.spaceForm.longitude = longitude;
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
-        .then(r => r.json()).then(data => {
-          const addr = data.address;
-          this.spaceForm.city = addr.city || addr.town || addr.village || '';
-          this.spaceForm.location = addr.suburb || addr.neighbourhood || addr.city_district || this.spaceForm.city;
-        }).catch(() => {});
-    });
+useCurrentLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
   }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+
+      this.spaceForm.latitude = latitude;
+      this.spaceForm.longitude = longitude;
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+        .then(r => r.json())
+        .then(data => {
+          console.log("Nominatim response:", data); // 🔍 DEBUG
+
+          const addr = data.address || {};
+
+          // ✅ Stronger fallback chain
+          this.spaceForm.city =
+            addr.city ||
+            addr.town ||
+            addr.village ||
+            addr.state_district ||
+            addr.county ||
+            "Chennai"; // fallback for demo
+
+          this.spaceForm.location =
+            addr.suburb ||
+            addr.neighbourhood ||
+            addr.city_district ||
+            addr.road ||
+            this.spaceForm.city;
+
+          // 🔥 FORCE Angular to detect change
+          this.spaceForm = { ...this.spaceForm };
+        })
+        .catch(err => {
+          console.error("Reverse geocoding failed:", err);
+
+          // fallback for demo
+          this.spaceForm.city = "Chennai";
+          this.spaceForm.location = `Lat: ${latitude}, Lng: ${longitude}`;
+        });
+    },
+    (err) => {
+      console.error("Geolocation error:", err);
+      alert("Unable to fetch location");
+    }
+  );
+}
 
   submitAddSpace() {
+    // Validate name: at least 5 characters and only alphabets
+    if (!this.spaceForm.name || !this.spaceForm.name.trim()) {
+      this.spaceFormError = 'Name is required';
+      return;
+    }
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (this.spaceForm.name.trim().length < 5 || !nameRegex.test(this.spaceForm.name.trim())) {
+      this.spaceFormError = 'Name must be at least 5 characters and contain only alphabets';
+      return;
+    }
+    // Validate price: above 0 only
+    if (this.spaceForm.pricePerHour === null || this.spaceForm.pricePerHour === undefined || this.spaceForm.pricePerHour === '') {
+      this.spaceFormError = 'Price per hour is required';
+      return;
+    }
+    if (this.spaceForm.pricePerHour <= 0) {
+      this.spaceFormError = 'Price per hour must be greater than 0';
+      return;
+    }
+    // Validate location: mandatory
+    if (!this.spaceForm.location || !this.spaceForm.location.trim()) {
+      this.spaceFormError = 'Location is required';
+      return;
+    }
     this.spaceFormLoading = true; this.spaceFormError = '';
     this.ownerSvc.addSpace(this.spaceForm).subscribe({
       next: () => { this.spaceFormLoading = false; this.showAddSpace = false; this.loadOwnerSpaces(); this.spaceForm = { name:'', type:'PUBLIC', pricePerHour:null, location:'', city:'', latitude:null, longitude:null, cctv:false, evCharging:false, guarded:false, coveredFence:false, notes:'' }; },

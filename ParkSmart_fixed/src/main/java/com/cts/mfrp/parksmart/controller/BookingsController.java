@@ -1,6 +1,6 @@
 package com.cts.mfrp.parksmart.controller;
 
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -55,14 +55,14 @@ public class BookingsController {
     }
     
     @PostMapping("/bookings/extend-hold")
-    public ResponseEntity<LocalDateTime> extendHold(
+    public ResponseEntity<String> extendHold(
             @Valid @RequestBody ExtendHoldRequestDTO request,
             Authentication authentication) {
 
         String email = authentication.getName();
 
         return ResponseEntity.ok(
-                bookingsService.extendHold(request.getHoldId(), email)
+                bookingsService.extendHold(request.getHoldId(), email).atZone(ZoneId.systemDefault()).toInstant().toString()
         );
     }
     

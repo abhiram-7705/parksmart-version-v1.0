@@ -29,9 +29,12 @@ public class ParkingController {
 
     @PostMapping("/slots/availability")
     public ResponseEntity<SlotAvailabilityResponseDTO> getSlotAvailability(
-            @Valid @RequestBody SlotAvailabilityRequestDTO request) {
+            @Valid @RequestBody SlotAvailabilityRequestDTO request,
+            Authentication authentication) {
 
-        return ResponseEntity.ok(parkingService.getSlotAvailability(request));
+        String email = authentication.getName();
+
+        return ResponseEntity.ok(parkingService.getSlotAvailability(request, email));
     }
 
     @PostMapping("/slots/hold")

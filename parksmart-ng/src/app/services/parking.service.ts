@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export interface SlotInfo { slotId: number; slotNumber: string; isAvailable: boolean; status: string; }
+export interface SlotInfo { slotId: number; slotNumber: string; available: boolean; status: string; }
 export interface SlotAvailResponse { slots: SlotInfo[]; durationMinutes: number; billedHours: number; totalPrice: number; }
 export interface HoldResponse { holdId: string; expiresAt: string; }
 

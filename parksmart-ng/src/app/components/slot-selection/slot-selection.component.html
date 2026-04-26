@@ -73,8 +73,8 @@
              (click)="toggleSlot(slot)">
           <span class="slot-emoji">
             <ng-container *ngIf="isSelected(slot.slotId)">🚗</ng-container>
-            <ng-container *ngIf="!isSelected(slot.slotId) && !slot.isAvailable">🚫</ng-container>
-            <ng-container *ngIf="!isSelected(slot.slotId) && slot.isAvailable">🅿</ng-container>
+            <ng-container *ngIf="!isSelected(slot.slotId) && !slot.available">🚫</ng-container>
+            <ng-container *ngIf="!isSelected(slot.slotId) && slot.available">🅿</ng-container>
           </span>
           <span class="slot-number">{{ slot.slotNumber }}</span>
           <span class="slot-status-label" *ngIf="slot.status === 'BLOCKED'">Blocked</span>

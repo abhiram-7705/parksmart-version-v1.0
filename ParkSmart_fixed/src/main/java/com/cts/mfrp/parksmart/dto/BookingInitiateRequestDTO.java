@@ -7,16 +7,16 @@ import jakarta.validation.constraints.NotNull;
 
 public class BookingInitiateRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "hold ID needed")
     private String holdId;
 
-    @NotNull
+    @NotNull(message = "spaceID needed")
     private Integer spaceId;
 
-    @NotNull
+    @NotNull(message = "arrival needed")
     private LocalDateTime arrival;
 
-    @NotNull
+    @NotNull(message = "leaving needed")
     private LocalDateTime leaving;
 
 	public String getHoldId() {

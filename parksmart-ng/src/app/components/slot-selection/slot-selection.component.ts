@@ -26,6 +26,7 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
   showExpiredDialog = false;
   expiredCountdown = 10;
   private expiredInterval: any;
+  private isInitialLoad = true;
 
   constructor(private route: ActivatedRoute, public router: Router, private parkingSvc: ParkingService) {}
 
@@ -39,9 +40,9 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
       this.spaceId = Number(this.route.snapshot.paramMap.get('spaceId'));
     }
     if (state?.arriving) this.arriving = state.arriving;
-    else { const now = new Date(); this.arriving = this.toLocal(new Date(now.getTime() + 15*60000)); }
+    else { const now = new Date(); this.arriving = this.toLocal(new Date(now.getTime() + 16*60000)); }
     if (state?.leaving) this.leaving = state.leaving;
-    else { const a = new Date(this.arriving); this.leaving = this.toLocal(new Date(a.getTime() + 15*60000)); }
+    else { const a = new Date(this.arriving); this.leaving = this.toLocal(new Date(a.getTime() + 60*60000)); }
     this.ensureMinArrival();
     this.fetchSlots();
   }
@@ -54,16 +55,24 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
   }
 
   ensureMinArrival() {
-    const min = new Date(Date.now() + 15*60000);
+    if (!this.isInitialLoad) return;
+    const min = new Date(Date.now() + 16*60000);
     const arr = new Date(this.arriving);
     if (arr < min) this.arriving = this.toLocal(min);
+    this.isInitialLoad = false;
   }
 
   onTimeChange() {
-    this.ensureMinArrival();
     const arr = new Date(this.arriving);
     const lv = new Date(this.leaving);
-    if (lv <= arr) this.leaving = this.toLocal(new Date(arr.getTime() + 15*60000));
+    
+    // Validate time selection
+    if (lv <= arr) {
+      this.error = 'Leaving time must be after arrival time';
+      return;
+    }
+    
+    this.error = '';
     this.selectedSlotIds = [];
     this.holdExpiry = null;
     clearInterval(this.timerInterval);
@@ -81,13 +90,20 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
         this.billedHours = res.billedHours;
         this.totalPrice = res.totalPrice;
         this.loading = false;
+
+        console.log("FULL RESPONSE:", res);          // 🔥 important
+    console.log("SLOTS:", res.slots);            // 🔥 important
+
+    this.slots = res.slots;
+
+    console.log("AFTER ASSIGN:", this.slots); 
       },
       error: err => { this.error = err?.error || 'Failed to load slots'; this.loading = false; }
     });
   }
 
   toggleSlot(slot: SlotInfo) {
-    if (!slot.isAvailable) return;
+    if (!slot.available) return;
     const idx = this.selectedSlotIds.indexOf(slot.slotId);
     if (idx >= 0) {
       this.selectedSlotIds.splice(idx, 1);
@@ -145,7 +161,7 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
   isSelected(slotId: number): boolean { return this.selectedSlotIds.includes(slotId); }
   getSlotClass(slot: SlotInfo): string {
     if (this.isSelected(slot.slotId)) return 'selected';
-    if (!slot.isAvailable) return 'unavailable';
+    if (!slot.available) return 'unavailable';
     return 'available';
   }
 
@@ -159,5 +175,5 @@ export class SlotSelectionComponent implements OnInit, OnDestroy {
 
   goBack() { this.router.navigate(['/search']); }
 
-  availableCount(): number { return this.slots.filter(s => s.isAvailable).length; }
+  availableCount(): number { return this.slots.filter(s => s.available).length; }
 }

@@ -26,7 +26,7 @@ import com.cts.mfrp.parksmart.repository.ParkingSpacesRepository;
 import com.cts.mfrp.parksmart.repository.SlotHoldRepository;
 import com.cts.mfrp.parksmart.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ParkingService {
@@ -42,8 +42,9 @@ public class ParkingService {
 	@Autowired
 	private UserRepository userRepository;
 	
-	public SlotAvailabilityResponseDTO getSlotAvailability(SlotAvailabilityRequestDTO request) {
-
+	@Transactional
+	public SlotAvailabilityResponseDTO getSlotAvailability(SlotAvailabilityRequestDTO request, String email) {
+		slotHoldRepository.deleteByExpiresAtBefore(LocalDateTime.now());
 	    // 1. resolve time
 		LocalDateTime arrival = LocalDateTime.parse(request.getArrival());
 		LocalDateTime leaving = LocalDateTime.parse(request.getLeaving());
@@ -52,6 +53,7 @@ public class ParkingService {
 		}
 		LocalDateTime minTime = LocalDateTime.now().plusMinutes(15);
 		if (arrival.isBefore(minTime)) {
+			System.out.println(arrival);
 		    throw new IllegalArgumentException("Arrival must be at least 15 minutes from now");
 		}
 		
@@ -65,7 +67,9 @@ public class ParkingService {
 	    // 3. check availability
 		for (ParkingSlots slot : slots) {
 
-			boolean isAvailable = isSlotAvailable(slot.getSlotId(), arrival, leaving);
+			boolean isAvailable = isSlotAvailable(slot.getSlotId(), arrival, leaving, email);
+			
+			System.out.println(isAvailable);
 
 			SlotDTO dto = new SlotDTO();
 			dto.setSlotId(slot.getSlotId());
@@ -94,34 +98,39 @@ public class ParkingService {
 	    response.setDurationMinutes((int) durationMinutes);
 	    response.setBilledHours(billedHours);
 	    response.setTotalPrice(totalPrice);
-	    
 	    return response;
 
 	}
 
-	private boolean isSlotAvailable(Integer slotId, LocalDateTime arrival, LocalDateTime leaving) {
-		
-		boolean booked = bookingsRepository.existsByParkingSlotSlotIdAndArrivalLessThanAndLeavingGreaterThan(slotId, leaving,
-				arrival);
+	private boolean isSlotAvailable(Integer slotId, LocalDateTime arrival, LocalDateTime leaving, String email) {
 
-		if (booked) {
-			return false;
-		}
+	    System.out.println("Checking availability for slot: " + slotId);
 
-		boolean held = slotHoldRepository
-			    .existsBySlotSlotIdAndArrivalLessThanAndLeavingGreaterThanAndExpiresAtAfter(
-			        slotId,
-			        leaving,
-			        arrival,
-			        LocalDateTime.now()
-			);
+	    boolean booked = bookingsRepository
+	        .existsByParkingSlotSlotIdAndArrivalLessThanAndLeavingGreaterThan(
+	            slotId, leaving, arrival
+	        );
 
-		return !held;
+	    System.out.println("Booked? " + booked);
+
+	    boolean heldByOthers = slotHoldRepository
+	    	    .existsBySlotSlotIdAndArrivalLessThanAndLeavingGreaterThanAndExpiresAtAfterAndUserEmailNot(
+	    	        slotId,
+	    	        leaving,
+	    	        arrival,
+	    	        LocalDateTime.now(),
+	    	        email
+	    	    );
+
+	    	return !heldByOthers && !booked;
 	}
 	
 	@Transactional
 	public SlotHoldResponseDTO holdSlots(SlotHoldRequestDTO request, String email) {
 
+			
+		slotHoldRepository.deleteByUserEmail(email);
+		
 	    if (request.getSlotIds() == null || request.getSlotIds().isEmpty()) {
 	        throw new IllegalArgumentException("No slots selected");
 	    }
@@ -146,6 +155,17 @@ public class ParkingService {
 	    Users user = userRepository.findByEmail(email)
 	            .orElseThrow(() -> new RuntimeException("User not found"));
 	    
+	    List<SlotHold> holds = slotHoldRepository.findAll();
+
+	    System.out.println("==== CURRENT HOLDS ====");
+	    for (SlotHold h : holds) {
+	        System.out.println(
+	            "Slot: " + h.getSlot().getSlotId() +
+	            " | User: " + h.getUser().getEmail() +
+	            " | Expires: " + h.getExpiresAt()
+	        );
+	    }
+	    
 	    List<ParkingSlots> slots = new ArrayList<>();
 
 	    for (Integer slotId : request.getSlotIds()) {
@@ -157,7 +177,15 @@ public class ParkingService {
 	            throw new IllegalArgumentException("Slot does not belong to selected space");
 	        }
 
-	        boolean available = isSlotAvailable(slotId, arrival, leaving);
+	        System.out.println("---- HOLD CHECK START ----");
+	        System.out.println("SlotId: " + slotId);
+	        System.out.println("Arrival: " + arrival);
+	        System.out.println("Leaving: " + leaving);
+
+	        boolean available = isSlotAvailable(slotId, arrival, leaving, email);
+
+	        System.out.println("Available result: " + available);
+	        System.out.println("---- HOLD CHECK END ----");
 
 	        if (!available) {
 	            throw new IllegalArgumentException("One or more slots are no longer available");
