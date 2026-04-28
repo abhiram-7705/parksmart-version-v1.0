@@ -1,0 +1,20 @@
+.conf-page { min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+.conf-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: #fff; border-bottom: 1px solid var(--border); }
+.brand { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: var(--primary); }
+.topnav-link { font-size: .875rem; color: var(--text-mid); font-weight: 500; margin-left: 18px; transition: color .15s; }
+.topnav-link:hover { color: var(--primary); }
+.processing-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.proc-spinner { width: 52px; height: 52px; border: 4px solid var(--primary-mid); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+.processing-state h3 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-dark); }
+.processing-state p { font-size: .875rem; color: var(--text-muted); }
+.success-state { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 48px 24px; gap: 16px; }
+.success-icon { font-size: 3rem; }
+.success-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--text-dark); letter-spacing: -.5px; }
+.invoice-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 24px; box-shadow: var(--shadow-md); width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
+.bold-row span { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+.inv-location { display: flex; align-items: center; gap: 5px; font-size: .85rem; color: var(--text-muted); }
+.inv-row { display: flex; align-items: center; justify-content: space-between; font-size: .875rem; color: var(--text-mid); }
+.inv-amount { font-weight: 700; color: var(--primary); font-size: 1rem; }
+.redirect-notice { font-size: .875rem; color: var(--text-muted); }
+.dash-btn { padding: 12px 28px; }
+.no-invoice { text-align: center; color: var(--text-muted); }
