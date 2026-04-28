@@ -1,0 +1,591 @@
+<div class="dash-page">
+  <div class="dash-inner">
+    <!-- Tab toggle -->
+    <div class="tab-row">
+      <h1 class="dash-heading">{{ activeTab === 'user' ? 'My Bookings' : 'My Spaces' }}</h1>
+      <div class="tab-group">
+        <button class="tab-btn" [class.active]="activeTab==='user'" (click)="switchTab('user')">User Dashboard</button>
+        <button class="tab-btn" [class.active]="activeTab==='owner'" (click)="switchTab('owner')">Owner Dashboard</button>
+      </div>
+    </div>
+
+    <!-- ════ USER DASHBOARD ════ -->
+    <div *ngIf="activeTab === 'user'">
+      <!-- Filters bar with inline dropdowns -->
+      <div class="filters-bar">
+        <div class="search-wrap-db">
+          <svg class="s-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="db-search" type="text" placeholder="Search bookings..." [(ngModel)]="searchQuery" (input)="onSearchInput()" (keydown.enter)="loadUserBookings()"/>
+          <div class="db-suggestions" *ngIf="showSearchSuggestions">
+            <div *ngFor="let s of searchSuggestions" class="dbs-item" (click)="selectSuggestion(s)">{{ s }}</div>
+          </div>
+        </div>
+        <select class="db-select" [(ngModel)]="statusFilterSingle" (change)="onStatusDropdownChange()">
+          <option value="">All Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="UPCOMING">Upcoming</option>
+          <option value="PAST">Past</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        <select class="db-select" [(ngModel)]="typeFilterSingle" (change)="onTypeDropdownChange()">
+          <option value="">All Types</option>
+          <option value="PUBLIC">Public</option>
+          <option value="PRIVATE">Private</option>
+        </select>
+        <select class="db-select" [(ngModel)]="sortBy" (change)="applyFilters()">
+          <option value="">Sort</option>
+          <option value="arrival_asc">Arrival ↑</option>
+          <option value="arrival_desc">Arrival ↓</option>
+          <option value="price_low">Price ↑</option>
+          <option value="price_high">Price ↓</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" (click)="resetFilters()">Reset</button>
+        <button class="btn btn-primary btn-sm" (click)="applyFilters()">Apply</button>
+      </div>
+
+      <!-- Status cards -->
+      <div class="status-cards">
+        <div class="status-card active"><div class="sc-count">{{ countByStatus('ACTIVE') }}</div><div class="sc-label">Active</div><div class="sc-sub">Currently Parked</div></div>
+        <div class="status-card upcoming"><div class="sc-count">{{ countByStatus('UPCOMING') }}</div><div class="sc-label">Upcoming</div><div class="sc-sub">Starting Soon</div></div>
+        <div class="status-card past"><div class="sc-count">{{ countByStatus('PAST') }}</div><div class="sc-label">Past</div><div class="sc-sub">Completed</div></div>
+        <div class="status-card cancelled"><div class="sc-count">{{ countByStatus('CANCELLED') }}</div><div class="sc-label">Cancelled</div><div class="sc-sub">Refund Processed</div></div>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="bookingsLoading" class="loading-center"><div class="spinner spinner-dark"></div></div>
+
+      <!-- Empty: owner with no bookings -->
+      <div *ngIf="!bookingsLoading && filteredBookings.length === 0 && userRole === 'OWNER'" class="empty-owner">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <p>No bookings yet. <a class="link" routerLink="/search">Start booking</a> a parking space!</p>
+      </div>
+
+      <!-- Empty: user -->
+      <div *ngIf="!bookingsLoading && filteredBookings.length === 0 && userRole !== 'OWNER'" class="empty-owner">
+        <p>No bookings found.</p>
+      </div>
+
+      <!-- Bookings list -->
+      <div class="bookings-list" *ngIf="!bookingsLoading && filteredBookings.length > 0">
+        <div class="list-header">Bookings <span class="list-count">{{ filteredBookings.length }} items</span></div>
+        <div *ngFor="let b of filteredBookings" class="booking-card">
+          <div class="bc-left">
+            <div class="bc-status-bar" [ngClass]="b.status.toLowerCase()"></div>
+            <div class="bc-info">
+              <div class="bc-name-row">
+                <h3 class="bc-name">{{ b.spaceName }}</h3>
+                <span class="badge" [ngClass]="b.spaceType==='PUBLIC'?'badge-blue':'badge-gray'">{{ b.spaceType | lowercase }}</span>
+                <span class="badge" [ngClass]="{
+                  'badge-green': b.status==='ACTIVE',
+                  'badge-blue': b.status==='UPCOMING',
+                  'badge-gray': b.status==='PAST',
+                  'badge-red': b.status==='CANCELLED'
+                }">{{ b.status }}</span>
+              </div>
+              <div class="bc-detail">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ b.city }} <span class="dot">•</span> Slot {{ b.slotNumber }}
+              </div>
+              <div class="bc-dates">{{ formatDt(b.arrival) }} → {{ formatDt(b.leaving) }}</div>
+              <div class="bc-price">₹{{ b.totalAmount | number:'1.2-2' }} <span class="bc-rate">₹{{ b.pricePerHour }}/hr</span></div>
+            </div>
+          </div>
+          <div class="bc-actions">
+            <button class="btn btn-ghost btn-sm" (click)="showDirections=b">Directions</button>
+            <button class="btn btn-ghost btn-sm" (click)="showQR=b">QR</button>
+            <button *ngIf="b.isReceiptAvailable" class="btn btn-ghost btn-sm" (click)="openReceipt(b)">Receipt</button>
+            <button *ngIf="b.isExtendable" class="btn btn-ghost btn-sm" (click)="extendBooking(b)">Extend</button>
+            <button *ngIf="b.isContactAllowed" class="btn btn-ghost btn-sm" (click)="openContact(b)">Contact</button>
+            <button *ngIf="b.isRatingAllowed && !ratedBookingIds.has(b.bookingId)" class="btn btn-outline btn-sm" (click)="showRating=b;ratingValue=0">Rate</button>
+            <button *ngIf="b.isCancelable && b.status !== 'CANCELLED'" class="btn btn-danger btn-sm" (click)="showCancelConfirm=b">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ OWNER DASHBOARD ════ -->
+    <div *ngIf="activeTab === 'owner'">
+      <div class="owner-header">
+        <h2 class="owner-title">My Spaces</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" style="position:relative" (click)="openOwnerContacts()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Contacts
+            <span *ngIf="unreadContactCount > 0" class="notif-badge">{{ unreadContactCount }}</span>
+          </button>
+          <button class="btn btn-ghost btn-sm" (click)="loadOwnerApprovals()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+            Approvals
+          </button>
+          <button class="btn btn-primary btn-sm" (click)="showAddSpace=true;spaceFormError=''">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Add Space
+          </button>
+        </div>
+      </div>
+
+      <!-- Approval History (collapsible) -->
+      <div class="approval-history-wrap" *ngIf="approvalsOpen">
+        <div class="ah-header" (click)="approvalsOpen=!approvalsOpen">
+          <span class="ah-title">Approval Request History</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <table class="ps-table" *ngIf="ownerApprovals.length > 0">
+          <thead><tr><th>Space</th><th>Type</th><th>Location</th><th>Price</th><th>Status</th><th>Submitted</th><th>Resolved</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let a of ownerApprovals">
+              <td>{{ a.name }}</td>
+              <td><span class="badge" [ngClass]="a.type==='PUBLIC'?'badge-blue':'badge-gray'">{{ a.type | lowercase }}</span></td>
+              <td>{{ a.location }}, {{ a.city }}</td>
+              <td>₹{{ a.price }}/hr</td>
+              <td><span class="badge" [ngClass]="a.status==='APPROVED'?'badge-green':a.status==='REJECTED'?'badge-red':'badge-orange'">{{ a.status }}</span></td>
+              <td style="font-size:.8rem">{{ formatDt(a.submittedAt) }}</td>
+              <td style="font-size:.8rem">{{ a.resolvedAt ? formatDt(a.resolvedAt) : '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div *ngIf="ownerApprovals.length === 0" style="padding:16px;text-align:center;color:var(--text-light);font-size:.875rem">No requests yet.</div>
+      </div>
+
+      <div *ngIf="spacesLoading" class="loading-center"><div class="spinner spinner-dark"></div></div>
+
+      <div *ngIf="!spacesLoading && spaces.length === 0" class="empty-owner">
+        <p>You haven't listed any parking spaces yet.</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" (click)="showAddSpace=true">Add Your First Space</button>
+      </div>
+
+      <div *ngFor="let space of spaces" class="space-card">
+        <div class="sc-body">
+          <div class="sc-info">
+            <div class="sc-name-row">
+              <h3 class="sc-name">{{ space.name }}</h3>
+              <span class="badge" [ngClass]="space.type==='PUBLIC'?'badge-blue':'badge-gray'">{{ space.type | lowercase }}</span>
+              <span *ngIf="space.approvalStatus==='PENDING'" class="badge badge-orange">Pending Approval</span>
+              <span *ngIf="space.approvalStatus==='REJECTED'" class="badge badge-red">Rejected</span>
+              <span class="star">★</span><span class="sc-rating">{{ space.rating | number:'1.1-1' }}</span>
+            </div>
+            <div class="sc-loc">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ space.location }}, {{ space.city }}
+              <span class="dot">•</span> ₹{{ space.pricePerHour }}/hr
+            </div>
+            <div class="sc-facs">
+              <span *ngFor="let f of space.facilities" class="facility-tag">{{ f }}</span>
+            </div>
+          </div>
+          <div class="sc-actions">
+            <button class="btn btn-ghost btn-sm" (click)="openSlots(space)">Slots</button>
+            <button *ngIf="space.type==='PUBLIC'" class="btn btn-outline btn-sm" (click)="openGenerateSlots(space)">Generate Slots</button>
+            <button class="btn btn-ghost btn-sm" (click)="openBookings(space)">Bookings</button>
+            <button class="btn btn-ghost btn-sm" (click)="openTimeline(space)">Timeline</button>
+            <button class="btn btn-ghost btn-sm" (click)="openMore(space)">More</button>
+            <button class="btn btn-outline btn-sm" (click)="openEdit(space)">Edit</button>
+            <button class="btn btn-danger btn-sm" (click)="deleteSpace(space)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Directions -->
+<div class="modal-backdrop" *ngIf="showDirections" (click)="showDirections=null">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Directions</h3><button class="icon-btn" (click)="showDirections=null">✕</button></div>
+    <iframe [src]="'https://maps.google.com/maps?q='+showDirections!.latitude+','+showDirections!.longitude+'&z=16&output=embed' | safe" width="100%" height="300" frameborder="0" style="border:0;border-radius:10px;margin-top:12px" allowfullscreen loading="lazy"></iframe>
+  </div>
+</div>
+
+<!-- QR Placeholder -->
+<div class="modal-backdrop" *ngIf="showQR" (click)="showQR=null">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()" style="text-align:center;padding:36px 28px">
+    <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:16px">QR Code</h3>
+    <div style="width:160px;height:160px;background:var(--bg-soft);border:2px dashed var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--text-light);font-size:.8rem">QR Placeholder</div>
+    <p style="font-size:.85rem;color:var(--text-muted)">Booking #{{ showQR.bookingId }}</p>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" (click)="showQR=null">Close</button>
+  </div>
+</div>
+
+<!-- Receipt -->
+<div class="modal-backdrop" *ngIf="showReceipt" [style.z-index]="showOwnerReceipt ? 1100 : 1000" (click)="showReceipt=null;showOwnerReceipt=false">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Receipt</h3><button class="icon-btn" (click)="showReceipt=null;showOwnerReceipt=false">✕</button></div>
+    <div *ngIf="!receiptInvoice" style="padding:32px;text-align:center"><div class="spinner spinner-dark"></div></div>
+    <div *ngIf="receiptInvoice" class="receipt-body">
+      <div class="receipt-row"><span>Space</span><strong>{{ receiptInvoice.spaceName }}</strong></div>
+      <div class="receipt-row"><span>Location</span><span>{{ receiptInvoice.location }}</span></div>
+      <div class="receipt-row"><span>Slots</span><span>{{ receiptInvoice.slotNumbers?.join(', ') }}</span></div>
+      <div class="receipt-row"><span>Vehicle</span><span>{{ receiptInvoice.vehicleNumber }}</span></div>
+      <div class="receipt-row"><span>From</span><span>{{ formatDt(receiptInvoice.arrival) }}</span></div>
+      <div class="receipt-row"><span>To</span><span>{{ formatDt(receiptInvoice.leaving) }}</span></div>
+      <div class="receipt-row"><span>Base Rate</span><span>₹{{ receiptInvoice.baseRate }}/hr</span></div>
+      <div class="receipt-row"><span>Subtotal</span><span>₹{{ receiptInvoice.subtotal | number:'1.2-2' }}</span></div>
+      <div class="receipt-row"><span>Discount</span><span>-₹{{ receiptInvoice.discount | number:'1.2-2' }}</span></div>
+      <div class="receipt-row"><span>Tax (18%)</span><span>₹{{ receiptInvoice.tax | number:'1.2-2' }}</span></div>
+      <div class="receipt-row total"><span>Total</span><strong>₹{{ receiptInvoice.totalAmount | number:'1.2-2' }}</strong></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="window.print()">Download / Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rating -->
+<div class="modal-backdrop" *ngIf="showRating" (click)="showRating=null">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Rate your experience</h3><button class="icon-btn" (click)="showRating=null">✕</button></div>
+    <p style="font-size:.875rem;color:var(--text-muted);margin:4px 0 16px">{{ showRating!.spaceName }}</p>
+    <div class="star-rating">
+      <span *ngFor="let s of stars5" class="star-pick" [class.lit]="ratingValue >= s" (click)="ratingValue=s">★</span>
+    </div>
+    <textarea class="form-control" placeholder="Optional comment…" [(ngModel)]="ratingComment" style="margin-top:12px;resize:vertical;min-height:80px"></textarea>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" [disabled]="ratingValue===0||ratingSubmitting" (click)="submitRating()">
+      <span *ngIf="!ratingSubmitting">Submit Rating</span>
+      <span *ngIf="ratingSubmitting" class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<!-- Contact -->
+<div class="modal-backdrop" *ngIf="showContact" (click)="showContact=null">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Contact Owner</h3><button class="icon-btn" (click)="showContact=null">✕</button></div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:14px">We'll pass your details along directly.</p>
+    <div *ngIf="contactSuccess" class="alert alert-success" style="margin-bottom:12px">{{ contactSuccess }}</div>
+    <div class="contact-grid">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-control" [class.invalid]="contactFormErrors['name']" [(ngModel)]="contactForm.name" placeholder="Your name"/>
+        <div class="error-msg" *ngIf="contactFormErrors['name']">{{ contactFormErrors['name'] }}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-control" [class.invalid]="contactFormErrors['phone']" [(ngModel)]="contactForm.phone" placeholder="+91 00000 00000"/>
+        <div class="error-msg" *ngIf="contactFormErrors['phone']">{{ contactFormErrors['phone'] }}</div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Email</label>
+      <input class="form-control" [class.invalid]="contactFormErrors['email']" type="email" [(ngModel)]="contactForm.email" placeholder="you@example.com"/>
+      <div class="error-msg" *ngIf="contactFormErrors['email']">{{ contactFormErrors['email'] }}</div>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Preferred Contact Method</label>
+      <select class="form-control" [(ngModel)]="contactForm.preferredContact">
+        <option value="">Select one…</option>
+        <option>Phone</option><option>Email</option><option>WhatsApp</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Preferred Time</label>
+      <select class="form-control" [(ngModel)]="contactForm.preferredTime">
+        <option value="">Select a time slot…</option>
+        <option value="6am - 9am">6am – 9am</option>
+        <option value="9am - 12pm">9am – 12pm</option>
+        <option value="12pm - 3pm">12pm – 3pm</option>
+        <option value="3pm - 6pm">3pm – 6pm</option>
+        <option value="6pm - 9pm">6pm – 9pm</option>
+        <option value="Any Time">Any Time</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Message</label>
+      <textarea class="form-control" [class.invalid]="contactFormErrors['message']" [(ngModel)]="contactForm.message" placeholder="Hi, I'm interested…" style="min-height:80px;resize:vertical"></textarea>
+      <div class="error-msg" *ngIf="contactFormErrors['message']">{{ contactFormErrors['message'] }}</div>
+    </div>
+    <div class="alert alert-error" *ngIf="contactError" style="margin-bottom:8px;font-size:.82rem">{{ contactError }}</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:14px" [disabled]="contactSubmitting" (click)="submitContact()">
+      <span *ngIf="!contactSubmitting">Send Request</span>
+      <span *ngIf="contactSubmitting" class="spinner"></span>
+    </button>
+    <p style="text-align:center;font-size:.75rem;color:var(--text-light);margin-top:8px">The owner typically responds within 24 hours.</p>
+  </div>
+</div>
+
+<!-- Cancel Confirm -->
+<div class="modal-backdrop" *ngIf="showCancelConfirm">
+  <div class="modal-box" style="width:380px;padding:28px">
+    <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:10px">Confirm Cancellation</h3>
+    <p style="font-size:.875rem;color:var(--text-mid)">Are you sure you want to cancel your booking at <strong>{{ showCancelConfirm!.spaceName }}</strong>? A refund will be credited to your wallet.</p>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" (click)="showCancelConfirm=null">Keep Booking</button>
+      <button class="btn btn-danger btn-sm" [disabled]="cancelLoading" (click)="cancelBooking()">
+        <span *ngIf="!cancelLoading">Yes, Cancel</span>
+        <span *ngIf="cancelLoading" class="spinner"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Owner: Slots Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerSlots" (click)="showOwnerSlots=null">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>{{ showOwnerSlots.name }} – Slots</h3><button class="icon-btn" (click)="showOwnerSlots=null">✕</button></div>
+    <table class="ps-table" style="margin-top:12px">
+      <thead><tr><th>Slot</th><th>Status</th><th>Vehicle</th><th>Action</th><th>Delete</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let slot of ownerSlots">
+          <td>{{ slot.slotNumber }}</td>
+          <td><span [class]="'status-dot ' + slot.status.toLowerCase()">{{ slot.status }}</span></td>
+          <td>{{ slot.vehicleNumber || '-' }}</td>
+          <td>
+            <ng-container *ngIf="slot.status !== 'OCCUPIED'">
+              <button *ngIf="!slot.hasActiveBookings" class="btn btn-ghost btn-sm" (click)="toggleSlot(slot)">{{ slot.status === 'FREE' ? 'Block' : 'Unblock' }}</button>
+              <span *ngIf="slot.hasActiveBookings && slot.status === 'FREE'" style="font-size:.78rem;color:var(--text-light)">Has upcoming bookings</span>
+              <button *ngIf="slot.hasActiveBookings && slot.status === 'BLOCKED'" class="btn btn-ghost btn-sm" (click)="toggleSlot(slot)">Unblock</button>
+            </ng-container>
+            <span *ngIf="slot.status === 'OCCUPIED'" style="font-size:.8rem;color:var(--text-light)">Occupied</span>
+          </td>
+          <td>
+            <button *ngIf="!slot.hasActiveBookings && slot.status !== 'OCCUPIED'" class="btn btn-danger btn-sm" (click)="confirmDeleteSlot(slot)">Delete</button>
+            <span *ngIf="slot.hasActiveBookings || slot.status === 'OCCUPIED'" style="font-size:.78rem;color:var(--text-light)">Cannot delete</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="add-slot-row">
+      <input class="form-control" style="max-width:160px" placeholder="New slot (e.g. A4)" [(ngModel)]="newSlotName"/>
+      <button class="btn btn-primary btn-sm" [disabled]="addSlotLoading || !newSlotName" (click)="addSlot()">
+        <span *ngIf="!addSlotLoading">Add Slot</span>
+        <span *ngIf="addSlotLoading" class="spinner"></span>
+      </button>
+    </div>
+    <div class="alert alert-error" *ngIf="addSlotError" style="margin-top:8px">{{ addSlotError }}</div>
+  </div>
+</div>
+
+<!-- Owner: Bookings Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerBookings" (click)="showOwnerBookings=null">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>{{ showOwnerBookings.name }} – Bookings</h3><button class="icon-btn" (click)="showOwnerBookings=null">✕</button></div>
+    <div class="filter-chips" style="margin:12px 0">
+      <button *ngFor="let s of ['ALL','ACTIVE','UPCOMING','PAST','CANCELLED']" class="chip" [class.active]="ownerBookingFilter===s"
+        (click)="ownerBookingFilter=s;loadOwnerBookings(showOwnerBookings.spaceId)">{{ s }}</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="ps-table">
+        <thead><tr><th>ID</th><th>Slot</th><th>Vehicle</th><th>Arrival</th><th>Leaving</th><th>Booked At</th><th>Amount</th><th>Refundable</th><th>Status</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let b of ownerBookings">
+            <td>#{{ b.bookingId }}</td><td>{{ b.slotNumber }}</td><td>{{ b.vehicleNumber }}</td>
+            <td>{{ formatDt(b.arrival) }}</td><td>{{ formatDt(b.leaving) }}</td><td>{{ formatDt(b.bookedAt) }}</td>
+            <td>₹{{ b.amount | number:'1.2-2' }}</td>
+            <td><span [class]="b.refundable?'text-green':'text-red'">{{ b.refundable ? 'Yes' : 'No' }}</span></td>
+            <td><span class="badge badge-gray">{{ b.status }}</span></td>
+            <td><button class="btn btn-ghost btn-sm" (click)="getOwnerReceiptInvoice(b)">Receipt</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Owner: Timeline Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerTimeline" (click)="showOwnerTimeline=null">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>{{ showOwnerTimeline.name }} – Timeline</h3><button class="icon-btn" (click)="showOwnerTimeline=null">✕</button></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
+      <label class="form-label" style="margin:0">Date:</label>
+      <input class="form-control" style="width:180px" type="date" [(ngModel)]="timelineDate" (change)="loadTimeline(showOwnerTimeline.spaceId)" [max]="maxTimelineDate"/>
+    </div>
+
+    <!-- Hour labels -->
+    <div class="gtl-wrap">
+      <div class="gtl-header">
+        <div class="gtl-slot-col"></div>
+        <div class="gtl-bar-col">
+          <div class="gtl-hours">
+            <div *ngFor="let h of timelineHours" class="gtl-hour-label">{{ formatTlHour(h) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngFor="let row of ownerTimeline" class="gtl-row">
+        <div class="gtl-slot-col">{{ row.slotNumber }}</div>
+        <div class="gtl-bar-col">
+          <div class="gtl-track">
+            <!-- Booking blocks -->
+            <div *ngFor="let b of row.bookings"
+                 class="gtl-booking-block"
+                 [ngClass]="b.status==='ACTIVE' ? 'gtl-active' : b.status==='PAST' ? 'gtl-past' : 'gtl-upcoming'"
+                 [style.left.%]="getBlockLeft(b.arrival)"
+                 [style.width.%]="getBlockWidth(b.arrival, b.leaving)"
+                 [title]="b.vehicleNumber + ' | ' + formatDt(b.arrival) + ' → ' + formatDt(b.leaving)">
+              <span class="gtl-block-text">{{ b.vehicleNumber }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="ownerTimeline.length === 0" style="padding:24px;text-align:center;color:var(--text-light);font-size:.875rem">No slots or bookings for this date.</div>
+
+      <!-- Legend -->
+      <div class="gtl-legend">
+        <span class="gtl-legend-item"><span class="gtl-dot gtl-active"></span> Active</span>
+        <span class="gtl-legend-item"><span class="gtl-dot gtl-upcoming"></span> Upcoming</span>
+        <span class="gtl-legend-item"><span class="gtl-dot gtl-past"></span> Past</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Owner: More Details Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerMore" (click)="showOwnerMore=null">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>{{ showOwnerMore.name }}</h3><button class="icon-btn" (click)="showOwnerMore=null">✕</button></div>
+    <p style="color:var(--text-muted);font-size:.875rem">{{ showOwnerMore.location }}, {{ showOwnerMore.city }}</p>
+    <div class="more-details-grid">
+      <div class="md-item"><span class="md-label">Type</span><span>{{ showOwnerMore.type }}</span></div>
+      <div class="md-item"><span class="md-label">Price</span><span>₹{{ showOwnerMore.pricePerHour }}/hr</span></div>
+      <div class="md-item"><span class="md-label">Status</span><span>{{ showOwnerMore.active ? 'Active' : 'Inactive' }}</span></div>
+      <div class="md-item"><span class="md-label">Rating</span><span>⭐ {{ showOwnerMore.rating | number:'1.1-1' }}</span></div>
+    </div>
+    <div class="md-item" style="margin-top:8px"><span class="md-label">Facilities</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"><span *ngFor="let f of showOwnerMore.facilities" class="facility-tag">{{ f }}</span></div>
+    </div>
+    <div *ngIf="showOwnerMore.notes" class="md-item" style="margin-top:8px"><span class="md-label">Notes</span><p style="font-size:.875rem;color:var(--text-mid);margin-top:4px">{{ showOwnerMore.notes }}</p></div>
+    <div class="md-item" style="margin-top:8px"><span class="md-label">Coordinates</span><span style="font-size:.875rem">{{ showOwnerMore.latitude | number:'1.2-2' }}, {{ showOwnerMore.longitude | number:'1.2-2' }}</span></div>
+    <div class="map-wrap" style="margin-top:16px">
+      <iframe [src]="'https://maps.google.com/maps?q='+showOwnerMore.latitude+','+showOwnerMore.longitude+'&z=16&output=embed' | safe" width="100%" height="240" frameborder="0" style="border:0;border-radius:10px" allowfullscreen loading="lazy"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Owner: Edit Space Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerEdit" (click)="showOwnerEdit=false">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Edit Space</h3><button class="icon-btn" (click)="showOwnerEdit=false">✕</button></div>
+    <div class="alert alert-error" *ngIf="spaceFormError" style="margin:8px 0">{{ spaceFormError }}</div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Name *</label><input class="form-control" [(ngModel)]="spaceForm.name"/></div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Type *</label>
+      <select class="form-control" [(ngModel)]="spaceForm.type"><option value="PUBLIC">Public</option><option value="PRIVATE">Private</option></select>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Price per hour *</label><input class="form-control" type="number" [(ngModel)]="spaceForm.pricePerHour"/></div>
+    <div class="fac-checkboxes" style="margin-top:12px">
+      <label class="fac-chip" [class.selected]="spaceForm.cctv"><input type="checkbox" [(ngModel)]="spaceForm.cctv"/>CCTV</label>
+      <label class="fac-chip" [class.selected]="spaceForm.evCharging"><input type="checkbox" [(ngModel)]="spaceForm.evCharging"/>EV Charging</label>
+      <label class="fac-chip" [class.selected]="spaceForm.guarded"><input type="checkbox" [(ngModel)]="spaceForm.guarded"/>Guarded</label>
+      <label class="fac-chip" [class.selected]="spaceForm.coveredFence"><input type="checkbox" [(ngModel)]="spaceForm.coveredFence"/>Covered</label>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Notes</label><textarea class="form-control" [(ngModel)]="spaceForm.notes" style="min-height:70px;resize:vertical"></textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:14px" [disabled]="spaceFormLoading" (click)="saveEdit()">
+      <span *ngIf="!spaceFormLoading">Save Changes</span>
+      <span *ngIf="spaceFormLoading" class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<!-- Add Space Modal -->
+<div class="modal-backdrop" *ngIf="showAddSpace" (click)="showAddSpace=false">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Add Space</h3><button class="icon-btn" (click)="showAddSpace=false">✕</button></div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px">Enter details</p>
+    <div class="alert alert-error" *ngIf="spaceFormError">{{ spaceFormError }}</div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">Name *</label><input class="form-control" [(ngModel)]="spaceForm.name" placeholder="e.g. Express Mall Parking"/></div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Type *</label>
+      <select class="form-control" [(ngModel)]="spaceForm.type"><option value="PUBLIC">Public</option><option value="PRIVATE">Private</option></select>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Price per hour *</label><input class="form-control" type="number" [(ngModel)]="spaceForm.pricePerHour" placeholder="75"/></div>
+    <button class="btn btn-outline btn-sm" style="margin-top:12px" (click)="useCurrentLocation()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Use Current Location
+    </button>
+    <div *ngIf="spaceForm.location" class="extracted-loc">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      {{ spaceForm.location }}, {{ spaceForm.city }}
+    </div>
+    <div class="fac-checkboxes" style="margin-top:14px">
+      <label class="fac-chip" [class.selected]="spaceForm.cctv"><input type="checkbox" [(ngModel)]="spaceForm.cctv"/>CCTV</label>
+      <label class="fac-chip" [class.selected]="spaceForm.evCharging"><input type="checkbox" [(ngModel)]="spaceForm.evCharging"/>EV Charging</label>
+      <label class="fac-chip" [class.selected]="spaceForm.guarded"><input type="checkbox" [(ngModel)]="spaceForm.guarded"/>Guarded</label>
+      <label class="fac-chip" [class.selected]="spaceForm.coveredFence"><input type="checkbox" [(ngModel)]="spaceForm.coveredFence"/>Covered</label>
+    </div>
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Notes <span style="color:var(--text-light)">(optional)</span></label>
+      <textarea class="form-control" [(ngModel)]="spaceForm.notes" placeholder="Any additional info…" style="min-height:70px;resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px" [disabled]="spaceFormLoading" (click)="submitAddSpace()">
+      <span *ngIf="!spaceFormLoading">Add Space</span>
+      <span *ngIf="spaceFormLoading" class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<!-- Delete Space Confirm -->
+<div class="modal-backdrop" *ngIf="showDeleteConfirm">
+  <div class="modal-box" style="width:360px;padding:26px">
+    <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">Delete Space?</h3>
+    <p style="font-size:.875rem;color:var(--text-mid)">This will permanently delete <strong>{{ showDeleteConfirm.name }}</strong>.</p>
+    <div class="alert alert-error" *ngIf="deleteSpaceError" style="margin-top:10px;font-size:.82rem">{{ deleteSpaceError }}</div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" (click)="showDeleteConfirm=null;deleteSpaceError=''">Cancel</button>
+      <button class="btn btn-danger btn-sm" (click)="confirmDeleteSpace()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Owner: Contact Requests Modal -->
+<div class="modal-backdrop" *ngIf="showOwnerContacts" (click)="showOwnerContacts=false">
+  <div class="modal-box detail-modal large-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Contact Requests</h3><button class="icon-btn" (click)="showOwnerContacts=false">✕</button></div>
+    <div *ngIf="contactsLoading" style="padding:32px;text-align:center"><div class="spinner spinner-dark"></div></div>
+    <div *ngIf="!contactsLoading && ownerContacts.length===0" style="padding:24px;text-align:center;color:var(--text-light)">No contact requests yet.</div>
+    <div *ngIf="!contactsLoading && ownerContacts.length>0" class="contact-list">
+      <div *ngFor="let r of ownerContacts" class="contact-item" [class.unread]="!r.isRead">
+        <div class="ci-header">
+          <span class="ci-name">{{ r.name }}</span>
+          <span *ngIf="r.spaceName" style="font-size:.75rem;color:var(--text-muted);margin-left:6px">re: {{ r.spaceName }}</span>
+          <span *ngIf="!r.isRead" class="ci-new-badge">New</span>
+          <span class="ci-date">{{ formatDt(r.requestedAt) }}</span>
+        </div>
+        <div class="ci-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {{ r.email }} &nbsp;|&nbsp; <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.3 2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 5.5 5.5l.96-.96a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> {{ r.phone }}</div>
+        <div class="ci-row"><strong>Preferred:</strong> {{ r.preferredContact }} · {{ r.preferredTime }}</div>
+        <div class="ci-msg">{{ r.message }}</div>
+        <div style="margin-top:8px;display:flex;justify-content:flex-end">
+          <button *ngIf="!r.isRead" class="btn btn-primary btn-sm" (click)="markContactRead(r);$event.stopPropagation()">Mark as Contacted</button>
+          <span *ngIf="r.isRead" style="font-size:.78rem;color:var(--text-light)">✓ Contacted</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Slots Modal -->
+<div class="modal-backdrop" *ngIf="showGenerateSlots" (click)="showGenerateSlots=null">
+  <div class="modal-box detail-modal" (click)="$event.stopPropagation()">
+    <div class="dm-header"><h3>Generate Slots – {{ showGenerateSlots.name }}</h3><button class="icon-btn" (click)="showGenerateSlots=null">✕</button></div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin:8px 0 16px">Slots will be named <code>L1-01, L1-02 … L2-01 …</code></p>
+    <div class="alert alert-error" *ngIf="genError" style="margin-bottom:12px">{{ genError }}</div>
+    <div class="alert" *ngIf="genSuccess" style="margin-bottom:12px;background:var(--success-light);color:var(--success);border:1px solid #bbf7d0;padding:10px 14px;border-radius:8px;font-size:.875rem">{{ genSuccess }}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Number of Levels * (1–10)</label>
+        <input class="form-control" [class.invalid]="genLevelsError" type="number" min="1" max="10" [(ngModel)]="genLevels" placeholder="e.g. 3"/>
+        <div class="error-msg" *ngIf="genLevelsError">{{ genLevelsError }}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Slots per Level * (1–100)</label>
+        <input class="form-control" [class.invalid]="genSlotsError" type="number" min="1" max="100" [(ngModel)]="genSlotsPerLevel" placeholder="e.g. 20"/>
+        <div class="error-msg" *ngIf="genSlotsError">{{ genSlotsError }}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--bg-soft);border-radius:8px;font-size:.82rem;color:var(--text-muted)" *ngIf="genLevels && genSlotsPerLevel && !genLevelsError && !genSlotsError">
+      This will create <strong>{{ genLevels * genSlotsPerLevel }} slots</strong> ({{ genLevels }} levels × {{ genSlotsPerLevel }} slots/level). Existing free slots will be replaced.
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px" [disabled]="genLoading || !!genLevelsError || !!genSlotsError" (click)="submitGenerateSlots()">
+      <span *ngIf="!genLoading">Generate Slots</span>
+      <span *ngIf="genLoading" class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<!-- Delete Slot Confirm -->
+<div class="modal-backdrop" *ngIf="showDeleteConfirm">
+  <div class="modal-box" style="width:340px;padding:26px">
+    <h3 style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">Delete Slot?</h3>
+    <p style="font-size:.875rem;color:var(--text-mid)">Delete slot <strong>{{ showDeleteConfirm?.slotNumber }}</strong>?</p>
+    <div class="alert alert-error" *ngIf="deleteSlotError" style="margin-top:10px;font-size:.82rem">{{ deleteSlotError }}</div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" (click)="showDeleteConfirm=null;deleteSlotError=''">Cancel</button>
+      <button class="btn btn-danger btn-sm" (click)="doDeleteSlot()">Delete</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+.profile-page { min-height: calc(100vh - 64px); background: var(--bg); padding: 36px 24px; }
+.profile-inner { max-width: 1100px; margin: 0 auto; }
+.profile-grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+.user-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 28px 24px; text-align: center; box-shadow: var(--shadow-sm); }
+.avatar-wrap { margin-bottom: 14px; }
+.avatar { width: 80px; height: 80px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--primary); border: 3px solid var(--primary-mid); }
+.user-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+.user-role { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--primary); background: var(--primary-light); padding: 3px 10px; border-radius: 99px; display: inline-block; margin-bottom: 16px; }
+.user-details { display: flex; flex-direction: column; gap: 12px; text-align: left; border-top: 1px solid var(--border); padding-top: 16px; }
+.ud-row { display: flex; align-items: flex-start; gap: 10px; color: var(--text-muted); }
+.ud-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); font-weight: 600; }
+.ud-val { font-size: .875rem; color: var(--text-dark); margin-top: 1px; }
+.wallet-section { display: flex; flex-direction: column; gap: 18px; }
+.wallet-balance-card { background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%); border-radius: var(--radius-xl); padding: 28px; }
+.wb-label { font-size: .82rem; font-weight: 600; color: rgba(255,255,255,.75); margin-bottom: 6px; }
+.wb-amount { font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 18px; }
+.add-balance-btn { background: rgba(255,255,255,.18) !important; color: #fff !important; border-color: rgba(255,255,255,.4) !important; }
+.add-balance-btn:hover { background: rgba(255,255,255,.28) !important; }
+.transactions-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+.txn-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: transparent; border-bottom: 1px solid var(--border); transition: background .12s; }
+.txn-toggle:hover { background: var(--bg-soft); }
+.txn-title { font-family: var(--font-display); font-size: .95rem; font-weight: 700; color: var(--text-dark); }
+.txn-toggle svg { transition: transform .2s; }
+.txn-table-wrap { overflow-x: auto; }
+.empty-txn { text-align: center; padding: 32px; color: var(--text-muted); font-size: .875rem; }
+.txn-amount.credit { color: var(--success); font-weight: 600; }
+.txn-amount.debit { color: var(--danger); font-weight: 600; }
+@media (max-width: 768px) { .profile-grid { grid-template-columns: 1fr; } }

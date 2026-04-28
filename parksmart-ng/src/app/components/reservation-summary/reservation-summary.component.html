@@ -1,0 +1,156 @@
+<div class="res-page">
+  <!-- Minimal navbar -->
+  <div class="res-topbar">
+    <a class="brand" routerLink="/">ParkSmart</a>
+    <div class="res-topbar-right">
+      <button class="back-btn" (click)="releaseAndGoBack()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Slot Selection
+      </button>
+      <div class="hold-timer" *ngIf="timerDisplay" [class.urgent]="timerDisplay.startsWith('0:')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        {{ timerDisplay }}
+      </div>
+    </div>
+  </div>
+
+  <div class="res-container" *ngIf="!loading; else loadingTpl">
+    <div class="alert alert-error" *ngIf="error" style="margin-bottom:20px">{{ error }}</div>
+
+    <div class="res-grid">
+      <!-- LEFT: Parking Details -->
+      <div class="parking-detail-card" *ngIf="card">
+        <div class="pdc-header">
+          <div>
+            <h2 class="pdc-name">{{ card.name }}</h2>
+            <span class="badge" [ngClass]="card.type==='PUBLIC'?'badge-blue':'badge-gray'">{{ card.type | lowercase }}</span>
+          </div>
+          <div class="pdc-price">₹{{ card.pricePerHour }}<span>/hr</span></div>
+        </div>
+        <div class="pdc-location">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          {{ card.city }}<span *ngIf="card.distance != null"> <span class="dot">•</span> {{ card.distance | number:'1.1-1' }} km</span>
+        </div>
+        <div class="pdc-facilities">
+          <span *ngFor="let f of card.facilities" class="facility-tag">{{ f }}</span>
+        </div>
+        <div class="pdc-map">
+          <iframe [src]="'https://maps.google.com/maps?q=' + card.latitude + ',' + card.longitude + '&z=16&output=embed' | safe"
+            width="100%" height="220" frameborder="0" style="border:0;border-radius:10px" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <!-- RIGHT: Reservation Summary -->
+      <div class="summary-card" *ngIf="summary">
+        <h2 class="sum-title">Reservation Summary</h2>
+
+        <div class="sum-field">
+          <label class="sum-label">From</label>
+          <div class="sum-value">{{ formatDt(summary.arrival) }}</div>
+        </div>
+        <div class="sum-field">
+          <label class="sum-label">To</label>
+          <div class="sum-value">{{ formatDt(summary.leaving) }}</div>
+        </div>
+        <div class="sum-field">
+          <label class="sum-label">Slots</label>
+          <div class="sum-value">{{ summary.slotIds?.length }} slot(s) selected</div>
+        </div>
+
+        <!-- Vehicle number -->
+        <div class="form-group" style="margin: 4px 0 8px">
+          <label class="form-label">Vehicle Number <span class="req">*</span></label>
+          <input class="form-control" [class.invalid]="vehicleError" type="text" placeholder="e.g. TN09AB1234"
+            [(ngModel)]="vehicleNumber" (blur)="vehicleTouched=true" (input)="vehicleNumber=vehicleNumber.toUpperCase()" maxlength="13"/>
+          <div class="error-msg" *ngIf="vehicleError">{{ vehicleError }}</div>
+        </div>
+
+        <div class="sum-sep"></div>
+
+        <div class="sum-row"><span>Base rate</span><span>₹{{ summary.baseRate }}/hr</span></div>
+        <div class="sum-row"><span>Duration</span><span>{{ summary.durationHours }} hr{{ summary.durationHours !== 1 ? 's' : '' }}</span></div>
+        <div class="sum-row"><span>Subtotal</span><span>₹{{ summary.subtotal | number:'1.2-2' }}</span></div>
+
+        <!-- Promo code -->
+        <div class="promo-row">
+          <input class="form-control promo-input" type="text" placeholder="Promo code"
+            [(ngModel)]="promoCode" [disabled]="promoApplied"
+            (ngModelChange)="promoCode=$event.toUpperCase()"/>
+          <button class="btn btn-outline btn-sm" (click)="applyPromo()" [disabled]="promoApplied || promoLoading || !promoCode">
+            <span *ngIf="!promoLoading">{{ promoApplied ? 'Applied ✓' : 'Apply' }}</span>
+            <span *ngIf="promoLoading" class="spinner spinner-dark" style="width:14px;height:14px"></span>
+          </button>
+        </div>
+        <div class="error-msg" *ngIf="promoError">{{ promoError }}</div>
+
+        <div class="sum-row discount" *ngIf="summary.discount > 0"><span>Discount</span><span class="discount-val">- ₹{{ summary.discount | number:'1.2-2' }}</span></div>
+        <div class="sum-row"><span>Taxes (18%)</span><span>₹{{ summary.tax | number:'1.2-2' }}</span></div>
+        <div class="sum-sep"></div>
+        <div class="sum-row total-row"><span>Total</span><span class="total-val">₹{{ summary.total | number:'1.2-2' }}</span></div>
+
+        <div class="wallet-row" [class.insufficient]="!summary.sufficientBalance">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+          Wallet Balance: <strong>₹{{ summary.walletBalance | number:'1.2-2' }}</strong>
+          <span *ngIf="!summary.sufficientBalance" class="insuf-warn">Insufficient</span>
+        </div>
+
+        <button class="btn btn-ghost extend-btn" (click)="extendHold()" *ngIf="timerDisplay && !extendDone">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Extend Hold (+15 min)
+        </button>
+        <div class="alert alert-error" *ngIf="extendError" style="margin-top:8px;font-size:.82rem">{{ extendError }}</div>
+
+        <button class="btn btn-primary book-btn" (click)="openConfirm()" [disabled]="confirmLoading">
+          <span *ngIf="!confirmLoading">Book Now</span>
+          <span *ngIf="confirmLoading" class="spinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #loadingTpl>
+    <div class="page-loading">
+      <div class="spinner spinner-dark" style="width:32px;height:32px;border-width:3px"></div>
+      <span>Preparing your booking…</span>
+    </div>
+  </ng-template>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-backdrop" *ngIf="showConfirm">
+  <div class="modal-box confirm-box">
+    <h3>Confirm Booking</h3>
+    <p>You are about to pay <strong>₹{{ summary?.total | number:'1.2-2' }}</strong> for {{ slotIds.length }} slot(s).</p>
+    <p style="margin-top:6px;font-size:.85rem;color:var(--text-muted)">This amount will be deducted from your wallet.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" (click)="showConfirm=false">Cancel</button>
+      <button class="btn btn-primary" (click)="confirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Insufficient Balance Dialog -->
+<div class="modal-backdrop" *ngIf="showInsufficientBalance">
+  <div class="modal-box confirm-box">
+    <div style="font-size:2rem;margin-bottom:8px">💳</div>
+    <h3>Insufficient Balance</h3>
+    <p>Your wallet balance is insufficient for this booking.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" (click)="showInsufficientBalance=false;releaseAndGoBack()">Cancel Booking</button>
+      <button class="btn btn-primary" (click)="showInsufficientBalance=false;showAddBalance=true">Add Balance</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Balance - redirect to profile -->
+<div class="modal-backdrop" *ngIf="showAddBalance">
+  <div class="modal-box confirm-box">
+    <div style="font-size:2rem;margin-bottom:8px">💳</div>
+    <h3>Add Balance</h3>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-top:6px">Visit your Profile page to raise a wallet top-up request. An admin will approve it shortly.</p>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-ghost btn-sm" (click)="showAddBalance=false">Cancel</button>
+      <button class="btn btn-primary btn-sm" routerLink="/profile" (click)="showAddBalance=false">Go to Profile</button>
+    </div>
+  </div>
+</div>
