@@ -1,0 +1,10 @@
+# Maven
+target/
+
+# Local Spring Boot config (contains DB password)
+src/main/resources/application-dev.properties
+
+# Eclipse
+.classpath
+.project
+.settings/
