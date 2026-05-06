@@ -6,23 +6,22 @@ import {
   HttpRequest
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class BaseUrlInterceptor implements HttpInterceptor {
 
-  private readonly BASE_URL = 'http://localhost:8081';
+  private readonly BASE_URL = environment.apiUrl;
 
   intercept(
     req: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
 
-    // If the request URL is already absolute, do nothing
     if (req.url.startsWith('http')) {
       return next.handle(req);
     }
 
-    // Otherwise, add the base URL
     const apiReq = req.clone({
       url: this.BASE_URL + req.url
     });
