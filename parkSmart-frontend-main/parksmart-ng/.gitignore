@@ -4,5 +4,8 @@ node_modules/
 # Build output
 dist/
 
-# Environment files with secrets (if any)
-src/environments/environment.dev.ts
+# Angular cache
+.angular/
+
+# Local environment
+src/environments/environment.ts
