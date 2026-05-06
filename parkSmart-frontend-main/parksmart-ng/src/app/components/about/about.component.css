@@ -1,0 +1,15 @@
+.about-page { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+.about-hero { text-align: center; margin-bottom: 48px; }
+.about-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #2563EB, #7C3AED); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.about-title { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--text-dark); letter-spacing: -.5px; }
+.about-sub { font-size: 1rem; color: var(--text-muted); margin-top: 8px; }
+.about-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; margin-bottom: 32px; box-shadow: var(--shadow-sm); }
+.about-card h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-dark); margin-bottom: 12px; }
+.about-card p { color: var(--text-mid); line-height: 1.75; }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.about-feature { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-xs); transition: box-shadow .2s, transform .2s; }
+.about-feature:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.af-icon { width: 44px; height: 44px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 14px; }
+.about-feature h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+.about-feature p { font-size: .875rem; color: var(--text-muted); line-height: 1.65; }
+@media (max-width: 600px) { .about-grid { grid-template-columns: 1fr; } }
