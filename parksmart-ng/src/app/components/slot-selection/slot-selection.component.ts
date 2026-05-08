@@ -246,7 +246,7 @@ onLeavingChange() {
   placeHold() {
     this.parkingSvc.holdSlots(this.spaceId, this.selectedSlotIds, this.arriving, this.leaving).subscribe({
       next: res => {
-        this.holdExpiry = new Date(res.expiresAt);
+        this.holdExpiry = new Date(res.expiresAt + '+05:30');
         clearInterval(this.timerInterval);
         this.startTimer();
       },
