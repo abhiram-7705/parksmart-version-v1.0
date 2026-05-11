@@ -5,6 +5,10 @@ target/
 src/main/resources/application-dev.properties
 
 # Eclipse
+
+.metadata/
+.recommenders/
+.settings/
 .classpath
 .project
-.settings/
+*.launch
