@@ -1,0 +1,7 @@
+spring.application.name=ParkSmart
+
+spring.profiles.active=${SPRING_PROFILES_ACTIVE:dev}
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+user.timezone=Asia/Kolkata

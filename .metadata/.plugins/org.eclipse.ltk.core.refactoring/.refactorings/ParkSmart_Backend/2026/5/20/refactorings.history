@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;com.cts.mfrp.parksmart.controller.HomeController&apos; to &apos;ChatController&apos;&#x0D;&#x0A;- Original project: &apos;ParkSmart_Backend&apos;&#x0D;&#x0A;- Original element: &apos;com.cts.mfrp.parksmart.controller.HomeController&apos;&#x0D;&#x0A;- Renamed element: &apos;com.cts.mfrp.parksmart.controller.ChatController&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;HomeController&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src\/main\/java=/optional=/true=/=/maven.pomderived=/true=/&lt;com.cts.mfrp.parksmart.controller{HomeController.java[HomeController" matchStrategy="1" name="ChatController" qualified="false" references="true" similarDeclarations="false" stamp="1778472571986" textual="false" version="1.0"/>
+</session>
