@@ -1,0 +1,70 @@
+<ng-container *ngIf="isVisible">
+
+  <!-- Chat Panel -->
+  <div class="chat-panel" *ngIf="isOpen">
+    <div class="chat-header">
+  <div class="chat-header-left">
+    <div class="bot-avatar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="7" r="4"/>
+        <path d="M8 11V7"/><path d="M16 11V7"/>
+      </svg>
+    </div>
+    <div>
+      <div class="chat-title">ParkSmart Assistant</div>
+      <div class="chat-subtitle">● Online</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" (click)="clearMessages()" title="Clear chat">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </button>
+    <button class="close-btn" (click)="toggle()">✕</button>
+  </div>
+</div>
+
+    <div class="chat-messages" #scrollContainer>
+      <div *ngFor="let msg of messages" [class]="'msg msg-' + msg.role">
+        {{ msg.text }}
+      </div>
+      <div class="msg msg-bot typing" *ngIf="isLoading">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- Quick question tags -->
+<div class="quick-tags">
+  <button class="tag-btn" *ngFor="let tag of quickTags" (click)="sendTag(tag)">
+    {{ tag }}
+  </button>
+</div>
+
+    <div class="chat-input-row">
+      <input
+        class="chat-input"
+        [(ngModel)]="inputText"
+        (keydown)="onKeyDown($event)"
+        placeholder="Type a question..."
+        [disabled]="isLoading"
+        autocomplete="off" />
+      <button class="send-btn" (click)="send()" [disabled]="isLoading">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Bubble -->
+  <button class="chat-bubble" (click)="toggle()" [title]="isOpen ? 'Close chat' : 'Chat with us'">
+    <svg *ngIf="!isOpen" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <svg *ngIf="isOpen" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+
+</ng-container>
