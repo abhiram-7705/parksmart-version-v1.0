@@ -1,0 +1,32 @@
+{
+  "name": "ParkSmart Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21"
+    },
+    "ghcr.io/devcontainers/features/maven:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/mysql:1": {
+      "version": "8.0",
+      "rootPassword": "tiger"
+    }
+  },
+  "forwardPorts": [8081, 4200, 3306],
+  "portsAttributes": {
+    "8081": { "label": "Spring Boot Backend" },
+    "4200": { "label": "Angular Frontend" },
+    "3306": { "label": "MySQL" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "angular.ng-template"
+      ]
+    }
+  }
+}
