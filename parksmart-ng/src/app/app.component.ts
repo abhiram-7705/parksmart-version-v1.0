@@ -10,6 +10,7 @@ import { ModalService, ModalType } from './services/modal.service';
     <router-outlet></router-outlet>
     <app-login-modal *ngIf="modal === 'login'"></app-login-modal>
     <app-signup-modal *ngIf="modal === 'signup'"></app-signup-modal>
+    <app-chat-bubble></app-chat-bubble>
   `,
   styles: []
 })

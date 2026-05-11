@@ -73,7 +73,7 @@
       <div class="filter-section">
         <div class="filter-label">Distance <span class="arrow">▾</span></div>
         <div class="radius-wrap">
-          <input type="range" min="1" max="50" step="1" [(ngModel)]="radius" (change)="onFilterChange()" class="radius-slider"/>
+          <input type="range" min="1" max="50" step="1" [(ngModel)]="radius" (input)="onFilterChange()" class="radius-slider"/>
           <span class="radius-val">{{ radius }} km</span>
         </div>
       </div>

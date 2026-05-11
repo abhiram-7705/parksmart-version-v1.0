@@ -111,31 +111,31 @@ public class SearchService {
 	    System.out.println(spaces);
 	    
 	    List<ParkingCardDTO> result = spaces.stream()
-	            .map(space -> mapToDTO(space, userLat, userLng))
+	            .map(space -> {
+	                ParkingCardDTO dto = mapToDTO(space, userLat, userLng);
+	                return dto;
+	            })
 	            .collect(Collectors.toList());
 
 	    result = result.stream()
-	            .filter(dto -> dto.getDistance() <= radius)
+	            .filter(dto -> {
+	                boolean withinRadius = dto.getDistance() <= radius;
+	                return withinRadius;
+	            })
 	            .collect(Collectors.toList());
-
 	    result = result.stream()
 	            .filter(dto -> isSpaceAvailable(dto.getSpaceId(), arrival, leaving))
 	            .collect(Collectors.toList());
-
 	    result = result.stream()
 	            .filter(dto -> filterByType(dto, request.getTypes()))
 	            .collect(Collectors.toList());
-
 	    result = result.stream()
 	            .filter(dto -> filterByPrice(dto, request.getMinPrice(), request.getMaxPrice()))
 	            .collect(Collectors.toList());
-
 	    result = result.stream()
 	            .filter(dto -> filterByFacilities(dto, request.getAmenities()))
 	            .collect(Collectors.toList());
-
 	    sortResults(result, request.getSortBy());
-	    System.out.println(result);
 	    return paginate(result, request.getPage(), request.getLimit());
 	}
 

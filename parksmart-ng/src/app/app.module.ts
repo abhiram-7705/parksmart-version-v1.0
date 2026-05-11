@@ -25,6 +25,7 @@ import { FloorPlanSlotNumPipe, AvailableCountPipe } from './components/shared/fl
 import { AuthInterceptor } from './services/auth.interceptor';
 
 import { BaseUrlInterceptor } from './interceptor/base-url.interceptor';
+import { ChatBubbleComponent } from './components/chat-bubble/chat-bubble.component';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { BaseUrlInterceptor } from './interceptor/base-url.interceptor';
     SafePipe,
     AdminComponent,
     FloorPlanSlotNumPipe,
-    AvailableCountPipe
+    AvailableCountPipe,
+    ChatBubbleComponent
   ],
   imports: [
     BrowserModule,

@@ -150,7 +150,10 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFilterChange() { this.doSearch(); }
+  onFilterChange() { 
+    this.radius = +this.radius;
+    this.doSearch();
+   }
 
   toggleCard(id: number) {
     this.expandedCardId = this.expandedCardId === id ? null : id;
