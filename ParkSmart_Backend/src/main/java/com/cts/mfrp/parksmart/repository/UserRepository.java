@@ -10,5 +10,4 @@ import com.cts.mfrp.parksmart.model.Users;
 @Repository
 public interface UserRepository extends JpaRepository<Users, Integer> {
     Optional<Users> findByEmail(String email);
-    Optional<Users> findByResetToken(String token);
 }

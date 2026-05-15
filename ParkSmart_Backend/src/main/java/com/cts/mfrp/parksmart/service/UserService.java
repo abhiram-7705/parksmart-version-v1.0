@@ -2,7 +2,6 @@ package com.cts.mfrp.parksmart.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +29,6 @@ public class UserService {
     @Autowired
     private WalletTransactionsRepository walletTransactionsRepository;
 
-    @Autowired
-    private EmailService emailService;
 
     public String registerUser(SignUpRequestDTO request) {
         String email = request.getEmail().trim().toLowerCase();
@@ -110,35 +107,4 @@ public class UserService {
             return dto;
         }).collect(Collectors.toList());
     }
-
-    public void generateResetToken(String email) {
-        Users user = userRepository.findByEmail(email.trim().toLowerCase())
-                .orElseThrow(() -> new RuntimeException("No account with that email"));
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
-        userRepository.save(user);
-        emailService.sendPasswordResetEmail(user.getEmail(), token);
-    }
-
-    public void validateResetToken(String token) {
-        Users user = userRepository.findByResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
-        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired");
-        }
-    }
-
-    public void resetPassword(String token, String password) {
-        Users user = userRepository.findByResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
-        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired");
-        }
-        user.setPassword(passwordEncoder.encode(password));
-        user.setResetToken(null);
-        user.setResetTokenExpiry(null);
-        userRepository.save(user);
-    }    
-    
 }

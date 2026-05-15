@@ -1,6 +1,5 @@
 package com.cts.mfrp.parksmart.model;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -33,13 +32,6 @@ public class Users {
 
     @Column(name = "wallet_balance")
     private double balance;
-
-
-	@Column
-	private String resetToken;
-	
-	@Column
-	private LocalDateTime resetTokenExpiry;
 
     
     @JsonIgnore
@@ -161,22 +153,5 @@ public class Users {
     public void setParkingSpaces(List<ParkingSpaces> parkingSpaces) {
         this.parkingSpaces = parkingSpaces;
     }
-
-	public String getResetToken() {
-		return resetToken;
-	}
-
-	public void setResetToken(String resetToken) {
-		this.resetToken = resetToken;
-	}
-
-	public LocalDateTime getResetTokenExpiry() {
-		return resetTokenExpiry;
-	}
-
-	public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) {
-		this.resetTokenExpiry = resetTokenExpiry;
-	}
-    
     
 }

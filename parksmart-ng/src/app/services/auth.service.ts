@@ -24,9 +24,6 @@ export class AuthService {
     return this.http.post<void>(this.BASE + '/logout', {}, { withCredentials: true })
       .pipe(tap(() => this._loggedIn.next(false)));
   }
-  forgotPassword(email: string): Observable<string> {
-    return this.http.post(this.BASE + '/forgot-password', { email }, { withCredentials: true, responseType: 'text' });
-  }
   setLoggedIn(v: boolean) { this._loggedIn.next(v); }
   isLoggedIn(): boolean { return this._loggedIn.getValue(); }
 }

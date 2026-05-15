@@ -52,16 +52,4 @@ export class LoginModalComponent {
       error: err => { this.loading = false; this.error = err?.error || 'Invalid email or password'; }
     });
   }
-
-  openForgot() { this.showForgot = true; this.forgotEmail = this.email; this.forgotMsg = ''; this.forgotError = ''; }
-  closeForgot() { this.showForgot = false; }
-
-  submitForgot() {
-    if (!this.forgotEmail) { this.forgotError = 'Enter your email'; return; }
-    this.forgotLoading = true; this.forgotError = ''; this.forgotMsg = '';
-    setTimeout(() => {
-      this.forgotLoading = false;
-      this.forgotMsg = 'Feature still under development. Please try again later.';
-    }, 800);
-  }
 }

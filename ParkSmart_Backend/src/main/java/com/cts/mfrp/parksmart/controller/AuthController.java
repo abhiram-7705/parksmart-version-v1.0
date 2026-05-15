@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 import java.util.Collections;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -79,54 +78,5 @@ public class AuthController {
 		cookie.setPath("/");
 		response.addCookie(cookie);
 	    return ResponseEntity.ok().build();
-	}
-	
-	@PostMapping("/forgot-password")
-	public ResponseEntity<String> forgotPassword(
-	        @RequestBody Map<String, String> body) {
-
-	    String email = body.get("email");
-
-	    if (email == null || email.isBlank()) {
-	        throw new IllegalArgumentException("Email is required");
-	    }
-
-	    userService.generateResetToken(email);
-	    return ResponseEntity.ok("Password reset link sent to email");
-	}
-
-	
-	@PostMapping("/reset-password/validate")
-	public ResponseEntity<String> validateResetToken(
-	        @RequestBody Map<String, String> body) {
-
-	    String token = body.get("token");
-
-	    if (token == null || token.isBlank()) {
-	        throw new IllegalArgumentException("Token is required");
-	    }
-
-	    userService.validateResetToken(token);
-	    return ResponseEntity.ok("Token is valid");
-	}
-	
-	@PostMapping("/reset-password")
-	public ResponseEntity<String> resetPassword(
-	        @RequestBody Map<String, String> body) {
-
-	    String token = body.get("token");
-	    String password = body.get("password");
-	    String confirmPassword = body.get("confirmPassword");
-
-	    if (token == null || password == null || confirmPassword == null) {
-	        throw new IllegalArgumentException("All fields are required");
-	    }
-
-	    if (!password.equals(confirmPassword)) {
-	        throw new IllegalArgumentException("Passwords do not match");
-	    }
-
-	    userService.resetPassword(token, password);
-	    return ResponseEntity.ok("Password reset successful");
 	}
 }
